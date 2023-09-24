@@ -1,95 +1,107 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+'use client'
+import cl from './page.module.css'
+import {useEffectOnce, useUpdateEffect} from 'usehooks-ts'
+import {newsPendingSelector, newsSelector} from '@/store/news/news.slice'
+import {useAppDispatch, useSelector} from '@/store'
+import {
+  fetchNews,
+  fetchNewsByPage,
+  fetchNewsByParams,
+} from '@/store/news/news.thunk'
+import NewsCardWrapper from '@/app/components/card-wrapper/NewsCardWrapper'
+import NewsCard from '@/app/components/card/NewsCard'
+import {FadeLoader} from 'react-spinners'
+import {ChangeEvent, useState} from 'react'
+import {useDebounce} from '@/hooks/useDebounce'
+import Select from 'react-select'
 
 export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+  const orderVariants = [
+    { label: 'Newest', value: 'newest' },
+    { label: 'Oldest', value: 'oldest' },
+    { label: 'Relevance', value: 'relevance' }
+  ];
+  const sizeVariants = [
+    { label: '5', value: 5 },
+    { label: '10', value: 10 },
+    { label: '15', value: 15 },
+    { label: '20', value: 20 },
+    { label: '25', value: 25 },
+    { label: '30', value: 30 }
+  ];
+  let page = 2
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [selectedOrderVariants, setSelectedOrderVariants] = useState()
+  const [selectedSize, setSelectedSize] = useState()
+  const dispatch = useAppDispatch()
+  const news = useSelector(newsSelector)
+  const newsPending = useSelector(newsPendingSelector)
+  const debouncedSearchQueries = useDebounce(searchQuery)
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+  useEffectOnce(() => {
+    dispatch(fetchNews())
+    window.addEventListener('scroll', handleScroll)
+  })
+  useUpdateEffect(() => {
+    console.log(news)
+  })
+  useUpdateEffect(() => {
+    dispatch(fetchNewsByParams([
+      {'order-by': selectedOrderVariants || 'newest'},
+      {'page-size': selectedSize || 10},
+      {q: debouncedSearchQueries || ''}
+    ]))
+  }, [selectedSize, debouncedSearchQueries, selectedOrderVariants])
+
+  function handleScroll(e: Event) {
+    if (e.target instanceof Document) {
+      if((window.innerHeight + Math.round(e.target.documentElement.scrollTop) === e.target.documentElement.scrollHeight) && !newsPending){
+        dispatch(fetchNewsByPage({page}))
+        page++
+      }
+    }
+  }
+  function handleSearch(e: ChangeEvent<HTMLInputElement>) {
+    setSearchQuery(e.target.value)
+  }
+  function handleOrderChange(newValue: any) {
+    setSelectedOrderVariants(newValue.value)
+  }
+  function handleSizeChange(newValue: any) {
+    setSelectedSize(newValue.value)
+  }
+
+  return (
+      <div className={cl.container}>
+        <input type="search" className={cl.searchInput} onChange={handleSearch} placeholder="Search news"/>
+        <div className={cl.selects}>
+          <Select
+              id="order-select"
+              options={orderVariants}
+              onChange={handleOrderChange}
+              value={orderVariants.find(option => option.value === selectedOrderVariants)}
+              placeholder="Sort by"
+          />
+          <Select
+              id="size-select"
+              options={sizeVariants}
+              onChange={handleSizeChange}
+              value={sizeVariants.find(option => option.value === selectedSize)}
+              placeholder="Items on page"
+          />
+        </div>
+        <NewsCardWrapper>
+          {news.map((el, index) => (
+              <NewsCard key={index} id={el.id} imgSrc={el?.fields?.thumbnail} title={el.webTitle}/>
+          ))}
+        </NewsCardWrapper>
+        <FadeLoader
+            color="#483520"
+            loading={newsPending}
+            cssOverride={{
+              margin: '20px auto'
+            }}
         />
       </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
   )
 }
