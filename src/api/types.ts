@@ -16,3 +16,4 @@ export interface ResponseWithParams<T> {
     results: T
   }
 }
+

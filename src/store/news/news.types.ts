@@ -2,6 +2,7 @@
 
 export interface NewsState {
   news: News[]
+  pending: boolean
 }
 
 export interface News {
@@ -15,5 +16,19 @@ export interface News {
   apiUrl: string
   isHosted: boolean,
   pillarId: string
-  pillarName: string
+  pillarName: string,
+  fields: {
+    thumbnail: string
+    bodyText: string
+  }
+  blocks: any
+}
+
+export interface SingleNewsResponse {
+  response: {
+    "status": string
+    "userTier": string
+    "total": number
+    "content": News
+  }
 }
