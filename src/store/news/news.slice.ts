@@ -31,12 +31,15 @@ const newsSlice = createSlice<NewsState, Reducers<NewsState>>({
   },
   extraReducers: (builder) => {
     builder
-        .addCase(fetchNews.pending || fetchNewsByParams.pending || fetchNewsByPage.pending, (state, action) => {
+        .addCase(fetchNews.pending || fetchNewsByParams.pending, (state, action) => {
           state.pending = true
         })
         .addCase(fetchNews.fulfilled || fetchNewsByParams.fulfilled, (state, action) => {
           state.news = action.payload.response.results
           state.pending = false
+        })
+        .addCase(fetchNewsByPage.pending, (state, action) => {
+          state.pending = true
         })
         .addCase(fetchNewsByPage.fulfilled, (state, action) => {
           state.news = [...state.news, ...action.payload.response.results]
